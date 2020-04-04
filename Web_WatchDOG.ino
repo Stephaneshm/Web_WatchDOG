@@ -11,7 +11,10 @@
 *   
 *   BIP       ->
 *   
-*   version 1.0 by SHM
+*   Add Switch to Put the Device in CONFIG MODE ( No WIFI Connection / No RESTART if Wifi failed )
+*   
+*   
+*   version 1.0a by SHM
 *   date : 2020-04-05
 */
 
@@ -51,6 +54,9 @@ unsigned long interval = 1500000L;                                    // 15 minu
 SSD1306Wire display(0x3c, SDA, SCL);                                  // ADDRESS, SDA, SCL  -  SDA and SCL usually populate automatically based on your board's pins_arduino.h
 
 void CheckWIFI(){                                                     // Check Wifi, if not reconnect , trying 120 connection, if NOT RESET ESP8266.
+
+// Check if CONFIG_MODE
+  
   uint8_t Nombre_Tentative;
   Nombre_Tentative=0;
   while (WiFi.status() != WL_CONNECTED) {
