@@ -10,7 +10,7 @@
 *   GREEN LED ->
 *   
 *   BIP       ->
-*   
+*   D8 -> Mode Config / Production ( Config= No WIFI )
 *   Add Switch to Put the Device in CONFIG MODE ( No WIFI Connection / No RESTART if Wifi failed )
 *   
 *   
@@ -43,6 +43,7 @@ char ReadData[125];                                                   // use for
 #define DS1232_STPulse D7                                             // define Pulse to D7  
 #define RELAY D5                                                      // define Relay to D5 
 #define BIP D0                                                        // define Buzzer to D0
+#define PIN_CONFIG D8                                                // define INTER to D8
 
 const char* remote_host_1 = "google.com";                             // define 1st Remote host by default  
 const char* remote_host_2 = "lwspanel.fr";                            // define 2nd remote host by default
@@ -50,20 +51,21 @@ const char* remote_host_2 = "lwspanel.fr";                            // define 
 unsigned long previousMillis=0 ;
 unsigned long interval = 1500000L;                                    // 15 minutes Delay
 
+boolean ConfigMode;                                                   // detection for Config or Production
 
 SSD1306Wire display(0x3c, SDA, SCL);                                  // ADDRESS, SDA, SCL  -  SDA and SCL usually populate automatically based on your board's pins_arduino.h
 
 void CheckWIFI(){                                                     // Check Wifi, if not reconnect , trying 120 connection, if NOT RESET ESP8266.
 
 // Check if CONFIG_MODE
-  
+  if (ConfigMode==1) {return;}
   uint8_t Nombre_Tentative;
   Nombre_Tentative=0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);                                                       // just a timing 
     Nombre_Tentative++;                                               // increase the attempt
     Blink(1,500);                                                     // Blink BLUE LED
-    if (Nombre_Tentative>120) {ESP.restart();}                        // attempt > 120 -> RESET ESP8266
+    if (Nombre_Tentative>120) {ESP.restart();}                        // attempt > 120 -> RESET ESP8266 
     Serial.print(".");
     }
 }
@@ -104,10 +106,10 @@ void ReadEEPROM(){
    Serial.println("password : "+String(myConfig.password));
    Serial.println("Remote 1 : "+String(myConfig.remote_1));
    Serial.println("Remote 2 : "+String(myConfig.remote_2));
-//   WIFI_SSID=myConfig.ssid;
-//   WIFI_PASS=myConfig.password;
-//   remote_host_1=myConfig.remote_1;
-//   remote_host_2=myConfig.remote_2;  
+   WIFI_SSID=myConfig.ssid;
+   WIFI_PASS=myConfig.password;
+   remote_host_1=myConfig.remote_1;
+   remote_host_2=myConfig.remote_2;  
 }
 
 void DisplayMessage(int x,int y, String Message){                     // Function to display text at x,y
@@ -144,11 +146,17 @@ void setup() {
    pinMode(LED_BLUE,OUTPUT);
    pinMode(RELAY,OUTPUT);
    pinMode(BIP,OUTPUT);
+   pinMode(PIN_CONFIG,INPUT_PULLUP);
    digitalWrite(LED_RED,LOW);                                         // Put LOW Signal
    digitalWrite(LED_GREEN,LOW);
    digitalWrite(LED_BLUE,LOW);
    digitalWrite(RELAY,LOW);
    digitalWrite(BIP,LOW);
+   ConfigMode=digitalRead(PIN_CONFIG);
+   Serial.print("Config: ");
+   Serial.println(ConfigMode);
+   DisplayMessage(0,30,"Config Mode ?");
+   delay(5000);
    Serial.println("Init the Wifi Connection.");    
    DisplayMessage(0,30,"Init WIFI");
    WiFi.begin(WIFI_SSID, WIFI_PASS);                                  // Init Wifi connection
