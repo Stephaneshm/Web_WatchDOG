@@ -29,14 +29,14 @@
 // ===============================================================================================================================================
 //                                                                   DEFINE
 // ===============================================================================================================================================
-#define Version  "1.0a"
+#define Version  "1.1a"
 #define LED_RED D6                                                    // define LED RED to D6 pin
 #define LED_GREEN D3                                                  // define LED GREEN to D3 pin
 #define LED_BLUE D4                                                   // define LED BLUE to D4 pin  
 #define DS1232_STPulse D7                                             // define Pulse to D7  
-#define RELAY D5                                                      // define Relay to D5 
+#define RELAY D8                                                      // define Relay to D8 - GPIO15 
 #define BIP D0                                                        // define Buzzer to D0
-#define PIN_CONFIG D8                                                // define INTER to D8
+#define PIN_CONFIG D5                                                 // define INTER to D5
 // ===============================================================================================================================================
 //                                                                   VARIABLE
 // ===============================================================================================================================================
@@ -137,7 +137,8 @@ void DisplayMessage(int x,int y, String Message){                     // Functio
 //                                                                   SETUP  
 // ===============================================================================================================================================
 void setup() {
-   analogWrite(DS1232_STPulse,10);                                    // Start the Pulse for DS1232 (WatchDOG)
+   pinMode(DS1232_STPulse,OUTPUT);
+   analogWrite(DS1232_STPulse,100);                                    // Start the Pulse for DS1232 (WatchDOG)
    Serial.begin(115200);                                              // Start the Serial port of the ESP8266
    Serial.println();   
    Serial.println("-------------- START --------------------");
@@ -154,7 +155,7 @@ void setup() {
    EEPROM.get(eepromAdress,myConfig);                                 // Read EEPROM
    if (strcmp(myConfig.magic_key,"WWCHD")==0){ReadEEPROM();}          // if the struct is valid, ReadEEPROM 
    Serial.println("Initialise the PIN");                              // init Pin OUT
-   DisplayMessage(0,30,"Init Pin OUT");
+   DisplayMessage(0,30,"Inict Pin OUT");
    pinMode(LED_RED,OUTPUT);
    pinMode(LED_GREEN,OUTPUT);
    pinMode(LED_BLUE,OUTPUT);
@@ -240,6 +241,7 @@ while (Serial.available())
       else if (strcmp(ReadData,"Reset")==0) { Serial.println("Reset !");ESP.restart();}            // return the MEMORY
       else if (strcmp(ReadData,"Relay")==0) { Serial.println("Relay !");CMD_Relay();}              // Toggle the relay
       else if (strcmp(ReadData,"Beep")==0) { CMD_Beep();}                                          // Beep for 2s
+      else if (strcmp(ReadData,"PulseOFF")==0) {analogWrite(DS1232_STPulse,0));}            // turn Off Pulse , DS1232 MUST Reboot
     }
   }
 }
@@ -285,6 +287,7 @@ void CMD_Help(){
   Serial.println(" Version -> Print the software version");
   Serial.println(" WM-ssid,password,remote1,remote2      -> Write MEMORY with parameter");
   Serial.println(" Beep    -> Beep for 2s");
+  Serial.println(" PulseOFF -> turn off the Pulse for DS1232");
   Serial.println(" --------------------------------------------------------------------");  
       
 }
