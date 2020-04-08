@@ -3,6 +3,10 @@
 Watchdog Module tu make a suprvision of a Internet BOX
 Restart the Box if no connection to Remote Host ( Ping )
 
+![PCB Board](\image\pcb1.jpg)
+![PCB Board](\image\pcb2.jpg)
+
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
@@ -35,15 +39,15 @@ The Relay switch for 5 Seconds
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](https://github.com/Stephaneshm/Web_WatchDOG) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/Stephaneshm/Web_WatchDOG). 
 
 ## Authors
 
-* **Stephane HELAIEM** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Stephane HELAIEM** - *Initial work* - https://github.com/Stephaneshm/Web_WatchDOG
 
 ## License
 
