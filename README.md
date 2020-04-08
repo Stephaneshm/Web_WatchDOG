@@ -3,8 +3,8 @@
 Watchdog Module tu make a suprvision of a Internet BOX
 Restart the Box if no connection to Remote Host ( Ping )
 
-![PCB Board](/blob/master/image/pcb1.jpg)
-![PCB Board](/blob/master/image/pcb2.jpg)
+![PCB Board](/image/pcb1.jpg)
+![PCB Board](/image/pcb2.jpg)
 
 
 ## Getting Started
