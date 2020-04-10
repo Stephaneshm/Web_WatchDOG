@@ -18,6 +18,8 @@ These instructions will get you a copy of the project up and running on your loc
 Need ARDUINO 1.8.x see https://www.arduino.cc/en/main/software
 Need a PCB version 1.2 min
 Connect the USB Port ( Tx & Rx ) to PCB Board ( Don't forget the GND )
+See code file for Library
+
 
 ### Installing
 
