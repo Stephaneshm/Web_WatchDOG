@@ -6,11 +6,11 @@
     some data are store in the EEPROM (Key+ssid+password+remotehost_1+remotehost_2 )
 
     BLUE LED  -> Wifi searching : blinking every second
-    RED LED   ->
-    GREEN LED ->
-
-    BIP       ->
-    D8 -> Mode Config  No WIFI Connection / No RESTART if Wifi failed )
+    RED LED   -> not use
+    GREEN LED -> not use
+    RELAY     -> D8
+    BIP       -> D0
+    D5        -> Mode Config  No WIFI Connection / No RESTART if Wifi failed )
 
     version  by SHM (see variable )
     date : 2020-04-05
@@ -31,7 +31,7 @@
 // ===============================================================================================================================================
 //                                                                   DEFINE
 // ===============================================================================================================================================
-#define Version  "1.5b"
+#define Version  "1.5c"
 #define LED_RED D6                                                    // define LED RED to D6 pin
 #define LED_GREEN D3                                                  // define LED GREEN to D3 pin
 #define LED_BLUE D4                                                   // define LED BLUE to D4 pin  
@@ -50,7 +50,6 @@ struct config {
   char remote_2[25];                                                  // 2nd remote host
   char ntpServer[30];                                                 // NTP Serveur or Pool ex: europe.pool.ntp.org
   unsigned long interval;                                             // Interval for scanning
-  
 } myConfig;
 
 int eepromAdress = 0;                                                 // pointer of the EEPROM Memory
@@ -79,11 +78,7 @@ char sDate[][10] = {                                                  // Stuctur
 //                                                                   CHECK WIFI
 // ===============================================================================================================================================
 void CheckWIFI() {                                                    // Check Wifi, if not reconnect , trying 120 connection, if NOT RESET ESP8266.
-
-  
-  if (ConfigMode == 1) {                                              // Check if CONFIG_MODE
-    return;
-  }
+  if (ConfigMode == 1) {return;}                                      // Check if CONFIG_MODE if Config mode return don't check wifi ( use for parameter )
   uint8_t Nombre_Tentative;
   Nombre_Tentative = 0;
   while (WiFi.status() != WL_CONNECTED) {
@@ -111,11 +106,11 @@ void Blink(int Number, int Timing)                                    // Blinkin
 // ===============================================================================================================================================
 //                                                                   ALARM
 // ===============================================================================================================================================
-void Alarm() {
-  for (int i = 0; i <= 7; i++)
+void Alarm() {                                                       // use for Reboot ALARM
+  for (int i = 0; i <= 7; i++)                                       // must be odd ( impair )
   {
-    digitalWrite(BIP, !digitalRead(BIP));                            //switch BIP
-    delay(150);
+    digitalWrite(BIP, !digitalRead(BIP));                            // switch BIP
+    delay(150);                                                      // timing
   }
 }
 
@@ -135,7 +130,7 @@ boolean RemotePing() {                                                // Functio
     Serial.println(remote_host_2);                                    // Ping Remote Host 2 for confirmation
     if (Ping.ping(remote_host_2)) {
       Serial.println("remote_host_2 - Success!!");
-      return true;                                                  // OK return TRUE
+      return true;                                                    // OK return TRUE
     } else {
       Serial.println("remote_host_2 - Error :(");                     // else NO Connection Return FALSE
       return false;
@@ -153,19 +148,21 @@ void ReadEEPROM() {
   Serial.println("Remote 2 : " + String(myConfig.remote_2));         // remote host N°2
   Serial.println("ntpServer: " + String(myConfig.ntpServer));        // ntpServer
   Serial.println("interval : " + String(myConfig.interval));         // interval
-  WIFI_SSID = myConfig.ssid;
-  WIFI_PASS = myConfig.password;
-  remote_host_1 = myConfig.remote_1;
-  remote_host_2 = myConfig.remote_2;
-  timeClient.setPoolServerName(myConfig.ntpServer);                  // fix the ntp server if defined in memory
-  timeClient.begin();
-  interval=myConfig.interval;
-
+   if (strcmp(myConfig.magic_key, "WWCHD") == 0) {                   // if Magickey valid fix memory->data 
+        WIFI_SSID = myConfig.ssid;                                   
+        WIFI_PASS = myConfig.password;
+        remote_host_1 = myConfig.remote_1;
+        remote_host_2 = myConfig.remote_2;
+        timeClient.end();                                            // stop the NTP
+        timeClient.setPoolServerName(myConfig.ntpServer);            // fix the ntp server if defined in memory
+        timeClient.begin();                                          // restart the NTP 
+        interval=myConfig.interval;
+      }
 }
 // ===============================================================================================================================================
 //                                                                   DISPLAY MESSAGE
 // ===============================================================================================================================================
-void DisplayMessage(int x, int y, String Message) {                   // Function to display text at x,y
+void DisplayMessage(int x, int y, String Message) {                  // Function to display text at x,y (x=64 always with TEXT ALIGN_CENTER)
   display.clear();
   display.setTextAlignment(TEXT_ALIGN_CENTER);   
   display.setFont(ArialMT_Plain_16);                                 // Set the police
@@ -184,8 +181,8 @@ void DisplayMessage(int x, int y, String Message) {                   // Functio
 //                                                                   SETUP
 // ===============================================================================================================================================
 void setup() {
-  pinMode(DS1232_STPulse, OUTPUT);
-  analogWrite(DS1232_STPulse, 100);                                   // Start the Pulse for DS1232 (WatchDOG)
+  pinMode(DS1232_STPulse, OUTPUT);                                   // define the pin mode for PWM 
+  analogWrite(DS1232_STPulse, 100);                                  // Start the Pulse for DS1232 (WatchDOG)
   Serial.begin(115200);                                              // Start the Serial port of the ESP8266
   Serial.println();
   Serial.println("-------------- START --------------------");
@@ -201,7 +198,7 @@ void setup() {
   DisplayMessage(64, 25, "Init EEPROM");
   EEPROM.get(eepromAdress, myConfig);                                // Read EEPROM
   if (strcmp(myConfig.magic_key, "WWCHD") == 0) {
-    ReadEEPROM(); // if the struct is valid, ReadEEPROM
+    ReadEEPROM();                                                    // if the struct is valid, ReadEEPROM
   }
   Serial.println("Initialise the PIN");                              // init Pin OUT
   DisplayMessage(64, 25, "Init Pin OUT");
@@ -234,7 +231,7 @@ void setup() {
   digitalWrite(BIP, HIGH);                                           // BEEP After the END od Setup
   delay(2000);                                                       // Waiting Time for the BEEP
   digitalWrite(BIP, LOW);                                            // Stop BEEP
-  timeClient.begin();
+  timeClient.begin();                                                // Start NTP
   CMD_Time();                                                        // Read Date/time
   Serial.println("- End of SETUP - ");
 }
@@ -242,37 +239,35 @@ void setup() {
 //                                                                   LOOP
 // ===============================================================================================================================================
 void loop() {
-
-
-  if ( millis() - previousMillis >= interval) {                        // timing is > interval -> action
-    CheckWIFI();                                                       // Check Wifi Connection 
-    if ( timeClient.update() == true) {
-      sTime = timeClient.getFormattedTime().substring(0, 5);
+  if ( millis() - previousMillis >= interval) {                       // timing is > interval -> action
+    CheckWIFI();                                                      // Check Wifi Connection before calling NTP
+    if ( timeClient.update() == true) {                               // time is valid and connection is valid 
+      sTime = timeClient.getFormattedTime().substring(0, 5);          // fix TIME
       DisplayMessage(64, 25, "Last Query : "+sTime);
       Serial.println(timeClient.getFormattedTime());
-    } else {
-      if (RemotePing() == true ) {                                      // start the Remote Ping
-        DisplayMessage(64, 25, "PING : OK  ");                          // If True CNX OK
-      } else {                                                       // If NOT
-        DisplayMessage(64, 25, "PING : NOK  ");                         // Need to RESTART put D5 DOWN
-        DisplayMessage(64, 25, "Rebooting...");                         //
-        Alarm();
+    } else {                                                          // Time is NOT Valid 2eme chech for connection : Ping Remote twice
+      if (RemotePing() == true ) {                                    // start the Remote Ping
+        DisplayMessage(64, 25, "PING : OK  ");                        // If True CNX OK
+      } else {                                                        // If NOT
+        DisplayMessage(64, 25, "PING : NOK  ");                       // Need to RESTART put RELAY ON
+        DisplayMessage(64, 25, "Rebooting...");                         
+        Alarm();                                                      // start ALARM  
         Serial.println("Rebooting ....");
         digitalWrite(RELAY, HIGH);                                    // Relay Actif for 2 seconds
         delay(5000);                                                  // Waiting Time for the Relay
         digitalWrite(RELAY, LOW);
         Serial.println("Wainiting until the Box Restart .... And Get Connection....");
-        for (int boucle = 0; boucle < 120; boucle++) {                 // Start waiting for 120s ( time is use for reboot box )
+        for (int boucle = 0; boucle < 120; boucle++) {                // Start waiting for 120s ( time is use for reboot box )
           delay(1000);
           Serial.println(String(boucle));
           DisplayMessage(64, 25, String(boucle));
         }
       }
     }
-    previousMillis = millis();
+    previousMillis = millis();                                        // reset previousmillis
   }
   //
-  // --------- Serial COMMAND
+  // --------- Serial COMMAND to communicate to module BAUD 115200,8,N,1 see schematic for connection
   //
   while (Serial.available())
   {
@@ -281,31 +276,31 @@ void loop() {
     //    Serial.print("ReadData:");
     //    Serial.println(ReadData);
     char *keywordPointer = strstr(ReadData, "-");
-    if (keywordPointer != NULL) {                                                     // with Parameter ( detection of "-" )
+    if (keywordPointer != NULL) {                                     // Command with Parameter ( detection of "-" )
       Serial.println("Avec parametres");
-      int dataPos = (keywordPointer - ReadData + 1);                                  // pointer after "-"
+      int dataPos = (keywordPointer - ReadData + 1);                  // pointer after "-"
       char Parameter[6][25];
       int CountParameter = 0;
-      char *token = strtok(&ReadData[dataPos], ",");                                  // Pointer to the First Parameter
-      if (token != NULL && strlen(token) < sizeof(Parameter[0])) {                    // Verify Token and Size
-        strncpy(Parameter[0], token, sizeof(Parameter[0]));                           // Copy 1st Parameter to Parameter[0]
+      char *token = strtok(&ReadData[dataPos], ",");                  // Pointer to the First Parameter
+      if (token != NULL && strlen(token) < sizeof(Parameter[0])) {    // Verify Token and Size
+        strncpy(Parameter[0], token, sizeof(Parameter[0]));           // Copy 1st Parameter to Parameter[0]
       }
-      for (int i = 1; i < 6; i++) {                                                   // next 3 parameters
+      for (int i = 1; i < 6; i++) {                                   // next 3 parameters
         token = strtok(NULL, ",");
         if (token != NULL && strlen(token) < sizeof(Parameter[i])) {
           strncpy(Parameter[i], token, sizeof(Parameter[i]));
         }
-      }                                                                               // All parameter are store in PARAMETER[]
-      strcpy(myConfig.magic_key, "WWCHD");                                            // Store Value in MyConfig
+      }                                                               // All parameter are store in PARAMETER[]
+      strcpy(myConfig.magic_key, "WWCHD");                            // Store Value in MyConfig
       strcpy(myConfig.ssid, Parameter[0]);
       strcpy(myConfig.password, Parameter[1]);
       strcpy(myConfig.remote_1, Parameter[2]);
       strcpy(myConfig.remote_2, Parameter[3]);
       strcpy(myConfig.ntpServer, Parameter[4]);
       myConfig.interval=atol(Parameter[5]);
-      EEPROM.put(eepromAdress, myConfig);                                                                   // Flash EEPROM at eepromAdress
-      EEPROM.commit();                                                                                      // Commit !
-      ReadEEPROM();                                                                                         // Read the EEPROM and affect the value to variable ! NEED to restart for WIFI Connection
+      EEPROM.put(eepromAdress, myConfig);                             // Flash EEPROM at eepromAdress
+      EEPROM.commit();                                                // Commit !
+      ReadEEPROM();                                                   // Read the EEPROM and affect the value to variable ! NEED to restart for WIFI Connection
     } else {                                                                                                // No Parameter ( no detection of "-" )
       if (strcmp(ReadData, "Version") == 0) {CMD_Version();}                                                // return the version of the software
       else if (strcmp(ReadData, "Help") == 0) {CMD_Help();}                                                 // return the help Command
@@ -315,7 +310,7 @@ void loop() {
       else if (strcmp(ReadData, "Beep") == 0) {CMD_Beep();}                                                 // Beep for 2s
       else if (strcmp(ReadData, "PulseOFF") == 0) {Serial.println("OK");analogWrite(DS1232_STPulse, 0);}    // turn Off Pulse , DS1232 MUST Reboot
       else if (strcmp(ReadData, "Time") == 0) {Serial.println("OK"); CMD_Time();}                           // Request Time NTP
-      else if (strcmp(ReadData, "SimulReboot") == 0) {Serial.println("OK");SimulReboot();}  // simul bad Remote Host to generate a reboot
+      else if (strcmp(ReadData, "SimulReboot") == 0) {Serial.println("OK");SimulReboot();}                  // simul bad Remote Host to generate a reboot
       else if (strcmp(ReadData, "Config") == 0) {CMD_Config();}                                             // print Config
       else if (strcmp(ReadData, "SetInterval_1") == 0) {Serial.println("OK"); interval = 100000L;}          // set interval to 1 min
       else if (strcmp(ReadData, "RAZ")==0) {Serial.println("OK");RAZ();}                                     // RAZ Memory
@@ -326,14 +321,14 @@ void loop() {
 //                                                                   CMD_RAZ
 // ===============================================================================================================================================
 void RAZ(){
-      strcpy(myConfig.magic_key, "#####");                                            // Store Value in MyConfig
+      strcpy(myConfig.magic_key, "#####");                           // Store Value in MyConfig
       strcpy(myConfig.ssid, "N/A");
       strcpy(myConfig.password,"N/A");
       strcpy(myConfig.remote_1,"N/A");
       strcpy(myConfig.remote_2,"N/A");
       strcpy(myConfig.ntpServer,"N/A");
       myConfig.interval=500000L;
-      EEPROM.put(eepromAdress, myConfig);                                                                   // Flash EEPROM at eepromAdress
+      EEPROM.put(eepromAdress, myConfig);                            // Flash EEPROM at eepromAdress
       EEPROM.commit();                  
 }
 
@@ -341,17 +336,18 @@ void RAZ(){
 //                                                                   CMD_SimulReboot
 // ===============================================================================================================================================
 void SimulReboot(){
-  timeClient.setPoolServerName("");                                                                           // Fix NTP server to NULL
-  timeClient.begin();
-  remote_host_1 = "";                                                                                         // Fix remote_1 to NULL    
-  remote_host_2 = "";                                                                                         // Fix remote_2 to NULL  
+  timeClient.end();                                                   // stop NTPClient  
+  timeClient.setPoolServerName("");                                   // Fix NTP server to NULL
+  timeClient.begin();                                                 // Start NTPClient
+  remote_host_1 = "";                                                 // Fix remote_1 to NULL    
+  remote_host_2 = "";                                                 // Fix remote_2 to NULL  
 }
 // ===============================================================================================================================================
 //                                                                   CMD_Config
 // ===============================================================================================================================================
 void CMD_Config() {
 
-  Serial.println("Config");
+  Serial.println("Config");                                           // print Config  
   Serial.print("SSID : ");  Serial.println(WIFI_SSID);
   Serial.print("PASS : "); Serial.println(WIFI_PASS);
   Serial.print("Host 1 : "); Serial.println(remote_host_1);
@@ -359,20 +355,17 @@ void CMD_Config() {
   Serial.print("Interval : "); Serial.println(interval);
   Serial.print("Date : ");Serial.println(sDate[Jour]);
   Serial.print("Time : "); Serial.println(sTime);
-
 }
-
-
 // ===============================================================================================================================================
 //                                                                   CMD_TIME
 // ===============================================================================================================================================
-void CMD_Time() {
+void CMD_Time() {                                                   // fix time
   timeClient.forceUpdate();
   Serial.println(timeClient.getFormattedTime());
   sTime = timeClient.getFormattedTime().substring(0, 5);
-  Jour=timeClient.getDay();
+  Jour=timeClient.getDay();                                         // get day ( number) 
   Serial.println(Jour);
-  Serial.print(sDate[Jour]);
+  Serial.print(sDate[Jour]);                                        // use sDate of Jour  
   Serial.print(" - TIME : ");
   Serial.println(sTime);
   DisplayMessage(64,25,sTime);
@@ -426,8 +419,5 @@ void CMD_Help() {
   Serial.println(" Config    -> Print Config");
   Serial.println(" SetInterval_1 -> set interval to 1 minute");
   Serial.println(" RAZ -> RAZ Memory ");
-  
-
   Serial.println(" --------------------------------------------------------------------");
-
 }
