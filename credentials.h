@@ -1,2 +1,2 @@
-const char* WIFI_SSID = "DC_Atelier";
-const char* WIFI_PASS = "delta_2019";
+const char* WIFI_SSID = "Your SSID";
+const char* WIFI_PASS = "Your Pass";
