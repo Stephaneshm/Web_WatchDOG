@@ -1,2 +1,2 @@
-const char* WIFI_SSID = "Your SSID";
-const char* WIFI_PASS = "Your Pass";
+const char* WIFI_SSID = "Freebox-60D420";
+const char* WIFI_PASS = "nq:&%^VK>nHtK66V]6Bm";
